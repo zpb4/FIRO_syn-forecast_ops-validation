@@ -7,7 +7,7 @@ Synthetic Forecast version 2 [https://github.com/zpb4/Synthetic-Forecast-v2-FIRO
 ## Workflow   
 Once data are available from the synthetic forecasting repos and available to the code in this repo in netcdf format, the user can train FIRO policies for each modeled site, simulate from those policies across both HEFS and synthetic HEFS ensemble forecasts, and analyze operational performance via plotting routines that are associated with the figure sequence in the associated manuscript. Note that workflow steps that are numbered must be run in the order indicated.
 
-The metadata that were generated for the WRR manuscript and can be used to run the plotting routines directly without the lengthy processing steps are available in the following Zenodo repository:
+The metadata that were generated for the WRR manuscript and can be used to run the plotting routines directly without the lengthy processing steps are available in the following Zenodo repository:  https://doi.org/10.5281/zenodo.11127417
 
 Most scripts below require runs to be accomplished separately for each location ('loc' variable) and site ('site' variable) used in the WRR study. The location/site combinations are listed below:   
 ADO/ADOC1 - Prado Dam   
