@@ -5,7 +5,7 @@ Synthetic Forecast version 1 [https://github.com/zpb4/Synthetic-Forecast-v1-FIRO
 Synthetic Forecast version 2 [https://github.com/zpb4/Synthetic-Forecast-v2-FIRO-DISES](https://github.com/zpb4/Synthetic-Forecast-v2-FIRO-DISES)   
 
 ## Workflow   
-Once data are available from the synthetic forecasting repos and ported to this repo in netcdf format, the user can train FIRO policies for each modeled site, simulate from those policies across both HEFS and synthetic HEFS ensemble forecasts, and analyze operational performance via plotting routines that are associated with the figure sequence in the associated manuscript
+Once data are available from the synthetic forecasting repos and available to the code in this repo in netcdf format, the user can train FIRO policies for each modeled site, simulate from those policies across both HEFS and synthetic HEFS ensemble forecasts, and analyze operational performance via plotting routines that are associated with the figure sequence in the associated manuscript. Note that workflow steps that are numbered must be run in the order indicated.
 
 The metadata that were generated for the WRR manuscript and can be used to run the plotting routines directly without the lengthy processing steps are available in the following Zenodo repository:
 
