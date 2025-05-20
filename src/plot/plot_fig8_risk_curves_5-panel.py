@@ -122,7 +122,7 @@ for p in enumerate(sites):
 
 #plt.suptitle(site,fontsize='xx-large',fontweight='bold')
 #fig.savefig('./figures/3-panel_risk-curve-comp_Kmin=%s_Rmin=%s_seed-%s.png' %(round(K_ratio_min,2),round(Rmax_ratio_min,2),seed),dpi=300,bbox_inches='tight')
-fig.savefig('./figures/5-panel_risk-curve-comp_seed-%s.png' %(seed),dpi=300,bbox_inches='tight')
+fig.savefig('./figs/5-panel_risk-curve-comp_seed-%s.png' %(seed),dpi=300,bbox_inches='tight')
 plt.show()
 
 

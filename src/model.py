@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 import xarray as xr
-from util import water_day
+from syn_util import water_day
 from numba import njit
 import calendar
 
@@ -12,15 +12,14 @@ kcfs_to_tafd = 2.29568411*10**-5 * 86400
 
 # ramping rate from ORO WCM is 10,000 cfs every two hours for an increase and 5,000 cfs every two hours for a decrease
 #ramping_rate_base = 120 * kcfs_to_tafd
-
-def extract(sd,ed,forecast_type,syn_sample,Rsyn_path,syn_vers,forecast_param,loc,site,opt_pcnt,gen_setup,K):
+def extract(sd,ed,forecast_type,syn_sample,Rsyn_path,syn_vers,forecast_param,loc,site,opt_pcnt,obj_pwr,opt_strat,gen_setup,K):
 
     if forecast_type=='hefs':
         path = '%s/out/%s/Qf-%s.nc' % (Rsyn_path,loc,forecast_type)
     elif forecast_type=='syn' and syn_vers=='v1':
         path = '%s/out/%s/Qf-%s_%s_%s.nc' % (Rsyn_path,loc,forecast_type+forecast_param,site,gen_setup)
     elif forecast_type=='syn' and syn_vers=='v2':
-        path = '%s/out/%s/Qf-%s_pcnt=%s_%s_%s.nc' % (Rsyn_path,loc,forecast_type,opt_pcnt,site,gen_setup)
+        path = '%s/out/%s/Qf-%s_pcnt=%s_objpwr=%s_optstrat=%s_%s_%s.nc' % (Rsyn_path,loc,forecast_type,opt_pcnt,obj_pwr,opt_strat,site,gen_setup)
         
     da = xr.open_dataset(path)[forecast_type]
     df = pd.read_csv('%s/data/%s/observed_flows.csv' %(Rsyn_path,loc), index_col=0, parse_dates=True)[sd:ed]
@@ -48,70 +47,6 @@ def extract(sd,ed,forecast_type,syn_sample,Rsyn_path,syn_vers,forecast_param,loc
     #recommend not presorting ensembles because it will mix and match ensemble members
     #Qf.sort(axis = 1)
     #Qf_MSG.sort(axis = 1)
-    df_idx = df.index
-    
-    return Q,Qf,dowy,tocs,df_idx
-
-def extract_scale(sd,ed,forecast_type,syn_sample,Rsyn_path,syn_vers,forecast_param,loc,site,opt_pcnt,gen_setup,K,scale_site,event_no,rtn_period):
-
-    if forecast_type=='hefs':
-        path = '%s/out/%s/Qf-%s_scaled_%s_evt=%s_rtn=%s.nc' % (Rsyn_path,loc,forecast_type,scale_site,event_no,rtn_period)
-    elif forecast_type=='syn' and syn_vers=='v1':
-        path = '%s/out/%s/Qf-%s_%s_%s.nc' % (Rsyn_path,loc,forecast_type+forecast_param,site,gen_setup)
-    elif forecast_type=='syn' and syn_vers=='v2':
-        path = '%s/out/%s/Qf-%s_pcnt=%s_%s_%s_scaled_%s_evt=%s_rtn=%s.nc' % (Rsyn_path,loc,forecast_type,opt_pcnt,site,gen_setup,scale_site,event_no,rtn_period)
-        
-    da = xr.open_dataset(path)[forecast_type]
-    df = pd.read_csv('%s/data/%s/observed_flows_scaled_%s_evt=%s_rtn=%s.csv' %(Rsyn_path,loc,scale_site,event_no,rtn_period), index_col=0, parse_dates=True)[sd:ed]
-
-    df = df * kcfs_to_tafd
-    Q = df[site].values 
-
-    dowy = np.array([water_day(d,calendar.isleap(d.year)) for d in df.index])
-    tocs = get_tocs(dowy,K)
-    
-    ado = {'ADOC1':0}
-    nhg = {'MSGC1L':0,'NHGC1':1}
-    lam = {'HOPC1L':0,'LAMC1':1,'UKAC1':2}
-    yrs = {'MRYC1L':0,'NBBC1':1,'ORDC1':2}
-    locs = {'ADO':ado,'NHG':nhg,'LAM':lam,'YRS':yrs}
-    
-    site_id = locs[loc][site]
-    
-    # (ensemble: 4, site: 2, date: 15326, trace: 42, lead: 15)
-    if forecast_type == 'hefs':
-        Qf = da.sel(ensemble=0, site=site_id, date=df.index).values * kcfs_to_tafd # np.array (time, trace, lead)
-    if forecast_type == 'syn':
-        Qf = da.sel(ensemble=int(syn_sample[5:])-1, site=site_id, date=df.index).values * kcfs_to_tafd # np.array (time, trace, lead)
-    
-    #recommend not presorting ensembles because it will mix and match ensemble members
-    #Qf.sort(axis = 1)
-    #Qf_MSG.sort(axis = 1)
-    df_idx = df.index
-    
-    return Q,Qf,dowy,tocs,df_idx
-
-def extract86(sd,ed,Rsyn_path,loc,site,K):
-    path = '%s/out/%s/Qf-hefs86.nc' % (Rsyn_path,loc)
-    da = xr.open_dataset(path)['hefs']
-    df = pd.read_csv('%s/data/%s/observed_flows.csv' %(Rsyn_path,loc), index_col=0, parse_dates=True)[sd:ed]
-
-    df = df * kcfs_to_tafd
-    Q = df[site].values 
-    
-    ado = {'ADOC1':0}
-    nhg = {'MSGC1L':0,'NHGC1':1}
-    lam = {'HOPC1L':0,'LAMC1':1,'UKAC1':2}
-    yrs = {'MRYC1L':0,'NBBC1':1,'ORDC1':2}
-    locs = {'ADO':ado,'NHG':nhg,'LAM':lam,'YRS':yrs}
-    
-    site_id = locs[loc][site]
-
-    dowy = np.array([water_day(d,calendar.isleap(d.year)) for d in df.index])
-    tocs = get_tocs(dowy,K)
-    
-    Qf = da.sel(ensemble=0, site=site_id, date=df.index).values * kcfs_to_tafd # np.array (time, trace, lead)
-
     df_idx = df.index
     
     return Q,Qf,dowy,tocs,df_idx
@@ -176,6 +111,8 @@ def simulate(firo_pool, ix, Q, Qf, dowy, tocs, K, Rmax, ramping_rate, policy='ba
   S = np.full(T+1, np.nan)
   R = np.full(T, np.nan)
   Q_cp = np.full(T, np.nan) # downstream flow at the control point
+  Q_sim = np.zeros(T+1)
+  Q_sim[:T] = Q
   spill = np.zeros(T)
   rel_leads = np.zeros(T)
   tocs = get_tocs(dowy,K)
@@ -202,35 +139,35 @@ def simulate(firo_pool, ix, Q, Qf, dowy, tocs, K, Rmax, ramping_rate, policy='ba
       R[t] = clip(S[t] + Q[t] - tocs[t], 0, Rmax) #ensure releases will not exceeed downstream Rmax
 
     elif policy == 'firo' and summer_rel_rule == 'firo':
-      R[t],rel_leads[t] = daily_opt(S[t], tocs[t], firo[t], Q[t], Qf[t,:,:], ix) # added the daily firo pool value
-      if R[t] < (S[t] + Q[t] - K): # added to try to fix spill issue 1/10/24
-          R[t] = S[t] + Q[t] - K # override release calculated from daily_opt to ensure no spill when res is full
+      R[t],rel_leads[t] = daily_opt(S[t], tocs[t], firo[t], Q_sim[t+1], Qf[t,:,:], ix) # added the daily firo pool value
+      if R[t] < (S[t] + Q_sim[t+1] - K): # added to try to fix spill issue 1/10/24
+          R[t] = S[t] + Q_sim[t+1] - K # override release calculated from daily_opt to ensure no spill when res is full
       if R[t] > Rmax: # added 4/24/24
           R[t] = Rmax
     
     elif policy == 'firo' and summer_rel_rule == 'baseline':
       #if in summer pool, execute baseline operations
       if dowy[t]==0 or dowy[t]>=220:
-          R[t] = clip(S[t] + Q[t] - tocs[t], 0, Rmax) #ensure releases will not exceeed downstream Rmax
+          R[t] = clip(S[t] + Q_sim[t+1] - tocs[t], 0, Rmax) #ensure releases will not exceeed downstream Rmax
           
       #o/w execute the firo rule
       else:
-          R[t],rel_leads[t] = daily_opt(S[t], tocs[t], firo[t], Q[t], Qf[t,:,:], ix) # added the daily firo pool value
-          if R[t] < (S[t] + Q[t] - K): # added to try to fix spill issue 1/10/24
-              R[t] = S[t] + Q[t] - K # override release calculated from daily_opt to ensure no spill when res is full
+          R[t],rel_leads[t] = daily_opt(S[t], tocs[t], firo[t], Q_sim[t+1], Qf[t,:,:], ix) # added the daily firo pool value
+          if R[t] < (S[t] + Q_sim[t+1] - K): # added to try to fix spill issue 1/10/24
+              R[t] = S[t] + Q_sim[t+1] - K # override release calculated from daily_opt to ensure no spill when res is full
           if R[t] > Rmax: 
               R[t] = Rmax
               
-    if R[t] > S[t] + Q[t]: # release limited by water available
-      R[t] = S[t] + Q[t]
+    if R[t] > S[t] + Q_sim[t+1]: # release limited by water available
+      R[t] = S[t] + Q_sim[t+1]
       
     if np.abs(R[t]-R[t-1]) > ramping_rate: #release limited by ramping rate (unlikely to be restrictive)
       R[t] = R[t-1] + np.sign((R[t]-R[t-1])) * ramping_rate
           
-    if S[t] + Q[t] - R[t] > K: # spill
-      spill[t] = S[t] + Q[t] - R[t] - K
+    if S[t] + Q_sim[t+1] - R[t] > K: # spill
+      spill[t] = S[t] + Q_sim[t+1] - R[t] - K
     
-    S[t+1] = S[t] + Q[t] - R[t] - spill[t]
+    S[t+1] = S[t] + Q_sim[t+1] - R[t] - spill[t]
     Q_cp[t] = R[t] # downstream flow at the control point
 
   return S[:T],R,firo,spill,Q_cp,rel_leads
@@ -240,6 +177,8 @@ def simulate_nonjit(firo_pool, ix, Q, Qf, dowy, tocs, K, Rmax, ramping_rate, pol
   S = np.full(T+1, np.nan)
   R = np.full(T, np.nan)
   Q_cp = np.full(T, np.nan) # downstream flow at the control point
+  Q_sim = np.zeros(T+1)
+  Q_sim[:T] = Q
   spill = np.zeros(T)
   rel_leads = np.zeros(T)
   tocs = get_tocs(dowy,K)
@@ -266,35 +205,35 @@ def simulate_nonjit(firo_pool, ix, Q, Qf, dowy, tocs, K, Rmax, ramping_rate, pol
       R[t] = clip(S[t] + Q[t] - tocs[t], 0, Rmax) #ensure releases will not exceeed downstream Rmax
 
     elif policy == 'firo' and summer_rel_rule == 'firo':
-      R[t],rel_leads[t] = daily_opt(S[t], tocs[t], firo[t], Q[t], Qf[t,:,:], ix) # added the daily firo pool value
-      if R[t] < (S[t] + Q[t] - K): # added to try to fix spill issue 1/10/24
-          R[t] = S[t] + Q[t] - K # override release calculated from daily_opt to ensure no spill when res is full
+      R[t],rel_leads[t] = daily_opt(S[t], tocs[t], firo[t], Q_sim[t+1], Qf[t,:,:], ix) # added the daily firo pool value
+      if R[t] < (S[t] + Q_sim[t+1] - K): # added to try to fix spill issue 1/10/24
+          R[t] = S[t] + Q_sim[t+1] - K # override release calculated from daily_opt to ensure no spill when res is full
       if R[t] > Rmax: # added 4/24/24
           R[t] = Rmax
     
     elif policy == 'firo' and summer_rel_rule == 'baseline':
       #if in summer pool, execute baseline operations
       if dowy[t]==0 or dowy[t]>=220:
-          R[t] = clip(S[t] + Q[t] - tocs[t], 0, Rmax) #ensure releases will not exceeed downstream Rmax
+          R[t] = clip(S[t] + Q_sim[t+1] - tocs[t], 0, Rmax) #ensure releases will not exceeed downstream Rmax
           
       #o/w execute the firo rule
       else:
-          R[t],rel_leads[t] = daily_opt(S[t], tocs[t], firo[t], Q[t], Qf[t,:,:], ix) # added the daily firo pool value
-          if R[t] < (S[t] + Q[t] - K): # added to try to fix spill issue 1/10/24
-              R[t] = S[t] + Q[t] - K # override release calculated from daily_opt to ensure no spill when res is full
+          R[t],rel_leads[t] = daily_opt(S[t], tocs[t], firo[t], Q_sim[t+1], Qf[t,:,:], ix) # added the daily firo pool value
+          if R[t] < (S[t] + Q_sim[t+1] - K): # added to try to fix spill issue 1/10/24
+              R[t] = S[t] + Q_sim[t+1] - K # override release calculated from daily_opt to ensure no spill when res is full
           if R[t] > Rmax: 
               R[t] = Rmax
               
-    if R[t] > S[t] + Q[t]: # release limited by water available
-      R[t] = S[t] + Q[t]
+    if R[t] > S[t] + Q_sim[t+1]: # release limited by water available
+      R[t] = S[t] + Q_sim[t+1]
       
     if np.abs(R[t]-R[t-1]) > ramping_rate: #release limited by ramping rate (unlikely to be restrictive)
       R[t] = R[t-1] + np.sign((R[t]-R[t-1])) * ramping_rate
           
-    if S[t] + Q[t] - R[t] > K: # spill
-      spill[t] = S[t] + Q[t] - R[t] - K
+    if S[t] + Q_sim[t+1] - R[t] > K: # spill
+      spill[t] = S[t] + Q_sim[t+1] - R[t] - K
     
-    S[t+1] = S[t] + Q[t] - R[t] - spill[t]
+    S[t+1] = S[t] + Q_sim[t+1] - R[t] - spill[t]
     Q_cp[t] = R[t] # downstream flow at the control point
 
   return S[:T],R,firo,spill,Q_cp,rel_leads

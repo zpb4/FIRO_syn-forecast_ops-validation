@@ -7,6 +7,7 @@ Created on Tue Jan 16 13:25:26 2024
 import sys
 import os
 sys.path.insert(0, os.path.abspath('../Synthetic-Forecast_Verification/src'))
+sys.path.insert(0, os.path.abspath('./src'))
 import numpy as np
 import pandas as pd
 import matplotlib as matplotlib
@@ -55,7 +56,7 @@ ed = '2019-08-15'
 
 loc = 'YRS'
 site = 'NBBC1'
-svers = 'test'
+svers = '5fold'
 p = 0
 opt_forecast = 'hefs'
 syn_samp = 'hefs'
@@ -118,43 +119,15 @@ seed = 1
 pars = pickle.load(open('data/%s/%s/%s_param-risk-thresholds_tocs-reset=%s_fixed=%s-%s_Krat=%s_Rmaxrat=%s_RRrat=%s_seed-%s.pkl'%(loc,site,opt_forecast,tocs_reset,fixed_pool,fixed_pool_value,round(K_ratios[p],2),round(Rmax_ratios[p],2),round(rr_ratios[p],2),seed),'rb'),encoding='latin1')
 risk_curve = syn_util.create_param_risk_curve((pars['lo'],pars['hi'],pars['pwr'],pars['no_risk'],pars['all_risk']),lds=max_lds)
 
-"""
-#demand calculations assuming baseline policy storage with no demand based releases
-dmd_par = pickle.load(open('./data/demand-data.pkl','rb'),encoding='latin1')
-
-dmd_t = model.simulate_baseline_demand(Q=Q_hefs, Q_MSG=Q_MSG_hefs, Qf=Qf_hefs, Qf_MSG=Qf_MSG_hefs, dowy=dowy_hefs, tocs=tocs_inp, dmd_params=dmd_par)[6]
-#o/w, do not include demand in optimization
-no_dmd_t = np.zeros_like(Q_hefs)
-"""
 #load synthetic forecast simulation data
-data1 = np.load('out/%s/%s/sim-array_synforc-%s_Krat=%s_Rmaxrat=%s_RRrat=%s_seed-%s.npz' %(loc,site,syn_vers1+svers,round(K_ratios[p],2),round(Rmax_ratios[p],2),round(rr_ratios[p],2),seed))
+data1 = np.load('data/%s/%s/sim-array_synforc-%s_Krat=%s_Rmaxrat=%s_RRrat=%s_seed-%s.npz' %(loc,site,syn_vers1+svers,round(K_ratios[p],2),round(Rmax_ratios[p],2),round(rr_ratios[p],2),seed))
 sim_data1 = data1['arr']
 
-data2 = np.load('out/%s/%s/sim-array_synforc-%s_Krat=%s_Rmaxrat=%s_RRrat=%s_seed-%s.npz' %(loc,site,syn_vers2+svers,round(K_ratios[p],2),round(Rmax_ratios[p],2),round(rr_ratios[p],2),seed))
+data2 = np.load('data/%s/%s/sim-array_synforc-%s_Krat=%s_Rmaxrat=%s_RRrat=%s_seed-%s.npz' %(loc,site,syn_vers2+svers,round(K_ratios[p],2),round(Rmax_ratios[p],2),round(rr_ratios[p],2),seed))
 sim_data2 = data2['arr']
 
-"""
-#load synthetic forecast simulation data
-mod_versd = mod_vers + 'd'
-data = np.load('data/comb_sim-array_synforc-%s_modvers-%s.npz' %(syn_vers1+svers1,mod_versd))
-sim_data1d = data['arr']
-
-data = np.load('data/comb_sim-array_synforc-%s_modvers-%s.npz' %(syn_vers2+svers2,mod_versd))
-sim_data2d = data['arr']
-"""
-"""
-#sim_data components across dim 3 for reference
-comb_array[i,:,0]=S
-comb_array[i,:,1]=R
-comb_array[i,:,2]=tocs
-comb_array[i,:,3]=firo
-comb_array[i,:,4]=spill
-comb_array[i,:,5]=Q_cp
-comb_array[i,:,6]=rel_ld
-"""
-
 #extract and simulate for HEFS-firo and baseline
-Q,Qf_hefs,dowy,tocs,df_idx = model.extract(sd,ed,forecast_type=opt_forecast,syn_sample=syn_samp,Rsyn_path=syn_path2,syn_vers=syn_vers2,forecast_param='a',loc=loc,site=site,opt_pcnt=syn_vers2_pct,gen_setup=syn_vers2_setup,K=K_scale)
+Q,Qf_hefs,dowy,tocs,df_idx = model.extract(sd,ed,forecast_type=opt_forecast,syn_sample=syn_samp,Rsyn_path=syn_path2,syn_vers=syn_vers2,forecast_param='a',loc=loc,site=site,opt_pcnt='',obj_pwr='',opt_strat='',gen_setup=syn_vers2_setup,K=K_scale)
 Qf_hefs = Qf_hefs[:,:,:max_lds]
 ne = np.shape(Qf_hefs)[1]
 Qf_summed = np.cumsum(Qf_hefs, axis=2)
@@ -272,7 +245,7 @@ ax1.xaxis.set_ticklabels([])
 ax1.tick_params(axis='both',which='major',labelsize='large')
 ax1.text(nb+0.25,0.31,'a)',fontsize='xx-large',fontweight='bold')
 #tt1 = '%s - %s' %(site,int(pct_disp1*100))+'%'
-tt1 = '$\mathrm{\mathbf{%s}}_{%s}$' %(site,int(pct_disp1*100))
+tt1 = '$\mathrm{\mathbf{%s}}_{%s}$' %(site,'top'+str(round((1-pct_disp1)*100))+'\%')
 fig_title(fig,tt1,loc=(-0.01,0.725),fontsize='xx-large',fontweight='bold',rotation=90,ha='center',va='center')
 
 ax2 = fig.add_subplot(gs0[1])
@@ -291,7 +264,7 @@ ax2.set_title('Release leads $(R^{ld})$ histogram',fontsize='large')
 #ax2.set_ylabel('Density')
 ax2.set_ylim([0,0.35])
 ax2.text(2.5,0.225,r'$\chi^2: $'+str(round(chisq2,2)),ha='center',fontsize='x-large')
-if (1-p1) > 1E-4:
+if (1-p2) > 1E-4:
     ax2.text(2.5,0.185,'$p: $'+str(round(1-p2,4)),ha='center',fontsize='x-large')
 else:
     ax2.text(2.5,0.185,'$p\lll0$',ha='center',fontsize='x-large')
@@ -338,7 +311,7 @@ ax3.set_xticks(ticks=(x1+0.25))
 ax3.xaxis.set_ticklabels(bn_labs)
 ax3.tick_params(axis='both',which='major',labelsize='large')
 #tt2 = '%s - %s' %(site,int(pct_disp2*100))+'%'
-tt2 = '$\mathrm{\mathbf{%s}}_{%s}$' %(site,int(pct_disp2*100))
+tt2 = '$\mathrm{\mathbf{%s}}_{%s}$' %(site,'top'+str(round((1-pct_disp2)*100))+'\%')
 fig_title(fig,tt2,loc=(-0.01,0.25),fontsize='xx-large',fontweight='bold',rotation=90,ha='center',va='center')
 
 ax4 = fig.add_subplot(gs0[3])
@@ -356,7 +329,7 @@ ax4.bar(x2,y2,color=cv2,width=0.4,yerr=yerr1)
 #ax4.set_ylabel('Density')
 ax4.set_ylim([0,0.35])
 ax4.text(2.5,0.3,r'$\chi^2: $'+str(round(chisq2,2)),ha='center',fontsize='x-large')
-if (1-p1) > 1E-4:
+if (1-p2) > 1E-4:
     ax4.text(2.5,0.26,'$p: $'+str(round(1-p2,4)),ha='center',fontsize='x-large')
 else:
     ax4.text(2.5,0.26,'$p\lll0$',ha='center',fontsize='x-large')
@@ -366,7 +339,7 @@ ax4.xaxis.set_ticklabels(bn_labs)
 ax4.yaxis.set_ticklabels([])
 ax4.tick_params(axis='both',which='major',labelsize='large')
 
-fig.savefig('./figures/%s/%s/2x2-rel-lead-plot_binned_svers-%s_Krat=%s_Rmaxrat=%s_RRrat=%s_seed-%s_disp-pct1=%s,pct2=%s.png' %(loc,site,svers,round(K_ratios[p],2),round(Rmax_ratios[p],2),round(rr_ratios[p],2),seed,pct_disp1,pct_disp2),dpi=300,bbox_inches='tight')
+fig.savefig('./figs/%s/%s/2x2-rel-lead-plot_binned_svers-%s_Krat=%s_Rmaxrat=%s_RRrat=%s_seed-%s_disp-pct1=%s,pct2=%s.png' %(loc,site,svers,round(K_ratios[p],2),round(Rmax_ratios[p],2),round(rr_ratios[p],2),seed,pct_disp1,pct_disp2),dpi=300,bbox_inches='tight')
 
 
 #sys.modules[__name__].__dict__.clear()

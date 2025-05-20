@@ -62,13 +62,13 @@ abc = list(map(chr, range(97, 123)))
 abc_labs = list((abc[i]+')') for i in range(len(abc)))
 
 
-svers = 'test'
+svers = '5fold'
 
 opt_forecast = 'hefs'
 syn_samp = 'hefs'
 pcntiles = (0.25,0.5,0.75,0.95) 
 pcntile_idx = verify.pcntile_fun(pcntiles)
-pct_disp = 0.0
+pct_disp = 0.9
 #pct_thresh = pct_disp
 pct_thresh = 0.9
 nsamps = 100
@@ -83,12 +83,12 @@ rr_match_Rmax = True   # if T, scale ramping rates with Rmax ratios, if F, leave
 
 syn_vers1 = 'v1'
 syn_vers1_param = 'a'
-syn_vers1_setup = 'cal'
+syn_vers1_setup = '5fold'
 syn_path1 = '../Synthetic-Forecast-%s-FIRO-DISES' %(syn_vers1) # path to R synthetic forecast repo for 'r-gen' setting below
 
 syn_vers2 = 'v2'
 syn_vers2_pct = 0.99
-syn_vers2_setup = '5fold'
+syn_vers2_setup = '5fold-test'
 syn_path2 = '../Synthetic-Forecast-%s-FIRO-DISES' %(syn_vers2) # path to R synthetic forecast repo for 'r-gen' setting below
 
 sim_forecast = 'syn' # what forecast to optimize to? either 'hefs' for actual HEFS hindcast or 'syn' for a synthetic sample
@@ -172,10 +172,10 @@ for s in enumerate(sites):
         risk_curve = syn_util.create_param_risk_curve((pars['lo'],pars['hi'],pars['pwr'],pars['no_risk'],pars['all_risk']),lds=max_lds)
 
         #load synthetic forecast simulation data
-        data1 = np.load('out/%s/%s/sim-array_synforc-%s_Krat=%s_Rmaxrat=%s_RRrat=%s_seed-%s.npz' %(loc,site,syn_vers1+svers,round(K_ratios[p[1]],2),round(Rmax_ratios[p[1]],2),round(rr_ratios[p[1]],2),seed))
+        data1 = np.load('data/%s/%s/sim-array_synforc-%s_Krat=%s_Rmaxrat=%s_RRrat=%s_seed-%s.npz' %(loc,site,syn_vers1+svers,round(K_ratios[p[1]],2),round(Rmax_ratios[p[1]],2),round(rr_ratios[p[1]],2),seed))
         sim_data1 = data1['arr']
 
-        data2 = np.load('out/%s/%s/sim-array_synforc-%s_Krat=%s_Rmaxrat=%s_RRrat=%s_seed-%s.npz' %(loc,site,syn_vers2+svers,round(K_ratios[p[1]],2),round(Rmax_ratios[p[1]],2),round(rr_ratios[p[1]],2),seed))
+        data2 = np.load('data/%s/%s/sim-array_synforc-%s_Krat=%s_Rmaxrat=%s_RRrat=%s_seed-%s.npz' %(loc,site,syn_vers2+svers,round(K_ratios[p[1]],2),round(Rmax_ratios[p[1]],2),round(rr_ratios[p[1]],2),seed))
         sim_data2 = data2['arr']
 
         """
@@ -190,7 +190,7 @@ for s in enumerate(sites):
         """
 
         #extract and simulate for HEFS-firo and baseline
-        Q,Qf_hefs,dowy,tocs,df_idx = model.extract(sd,ed,forecast_type=opt_forecast,syn_sample=syn_samp,Rsyn_path=syn_path2,syn_vers=syn_vers2,forecast_param='a',loc=loc,site=site,opt_pcnt=syn_vers2_pct,gen_setup=syn_vers2_setup,K=K_scale)
+        Q,Qf_hefs,dowy,tocs,df_idx = model.extract(sd,ed,forecast_type=opt_forecast,syn_sample=syn_samp,Rsyn_path=syn_path2,syn_vers=syn_vers2,forecast_param='a',loc=loc,site=site,opt_pcnt=syn_vers2_pct,obj_pwr='',opt_strat='',gen_setup=syn_vers2_setup,K=K_scale)
         Qf_hefs = Qf_hefs[:,:,:max_lds]
         ne = np.shape(Qf_hefs)[1]
         Qf_summed = np.cumsum(Qf_hefs, axis=2)
@@ -251,11 +251,11 @@ for s in enumerate(sites):
 
 sites.reverse()
 for i in enumerate(sites):
-    tt = '$\mathrm{\mathbf{%s}}_{%s}$' %(sites[i[0]],int(pct_disp*100))
+    tt = '$\mathrm{\mathbf{%s}}_{%s}$' %(sites[i[0]],'top'+str(round((1-pct_disp)*100))+'\%')
     fig_title(fig,tt,loc=(0,np.arange(len(sites))[i[0]]/(len(sites)*1.05)+(1/(len(sites)*1.05*2))+.005),rotation=90,ha='center',va='center',fontsize='xx-large',fontweight='bold')
 
 
-fig.savefig('./figures/multsite-multconfig_ops-val-polar_svers-%s_sites=%s_configs=%s_disp-pct=%s_seed=%s.png' %(svers,sites,configs,pct_disp,seed),dpi=300,bbox_inches='tight')
+fig.savefig('./figs/multsite-multconfig_ops-val-polar_svers-%s_sites=%s_configs=%s_disp-pct=%s_seed=%s.png' %(svers,sites,configs,pct_disp,seed),dpi=300,bbox_inches='tight')
        
 
 #----------------------------------end-----------------------------

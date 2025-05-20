@@ -34,6 +34,11 @@ cb_gry = col_cb[7]
 
 #sns.palplot((col_cb[4],cv1,col_cb[3],cv2)) #base colors pretty close to 'colorblind' palette
 kcfs_to_tafd = 2.29568411*10**-5 * 86400
+kcfs_to_m3s = 0.0283168466 * 1000
+taf_to_m3 = 1233.4818375475 * 1000
+taf_to_km3 = 0.0000012335 * 1000
+
+1943*kcfs_to_m3s/1000
 #K = 3524 # TAF
 #Rmax = 150 * kcfs_to_tafd # estimate - from MBK
 #ramping_rate = 30868/1000 * kcfs_to_tafd # cfs to kcfs to tafd
@@ -42,11 +47,11 @@ max_lds = 14
 sd = '1990-10-01' 
 ed = '2019-08-15'
 
-loc = 'YRS'
-site = 'NBBC1'
-svers = 'test'
+loc = 'NHG'
+site = 'NHGC1'
+svers = '5fold'
 p = 0
-evt_no = 1
+evt_no = 2
 # ORDC1 declustered top 5 events: 1 2 6 8 12
 # ADOC1 declustered top 3 events: 1 2 5 
 # LAMC1 declustered top 3 events: 1 2 3 
@@ -72,12 +77,6 @@ K_ratio_mid = 1-(1-K_ratio_min)/2
 
 K_ratios = np.full(3,fill_value=[1,K_ratio_mid,K_ratio_min])
 Rmax_ratios = np.full(3,fill_value=[1,Rmax_ratio_mid,Rmax_ratio_min])
-
-#K_ratios = np.full(9,fill_value=[1,1,1,K_ratio_mid,K_ratio_mid,K_ratio_mid,K_ratio_min,K_ratio_min,K_ratio_min])
-#Rmax_ratios = np.full(9,fill_value=[1,Rmax_ratio_mid,Rmax_ratio_min,1,Rmax_ratio_mid,Rmax_ratio_min,1,Rmax_ratio_mid,Rmax_ratio_min])
-
-#K_ratios = np.ones(9)
-#Rmax_ratios = np.full(9,fill_value=[1,.9,.8,.7,.6,.5,.4,.3,.2])
 
 K_scale = K * K_ratios[p]
 Rmax_scale = Rmax * Rmax_ratios[p]
@@ -110,55 +109,15 @@ seed = 1
 pars = pickle.load(open('data/%s/%s/%s_param-risk-thresholds_tocs-reset=%s_fixed=%s-%s_Krat=%s_Rmaxrat=%s_RRrat=%s_seed-%s.pkl'%(loc,site,opt_forecast,tocs_reset,fixed_pool,fixed_pool_value,round(K_ratios[p],2),round(Rmax_ratios[p],2),round(rr_ratios[p],2),seed),'rb'),encoding='latin1')
 risk_curve = syn_util.create_param_risk_curve((pars['lo'],pars['hi'],pars['pwr'],pars['no_risk'],pars['all_risk']),lds=max_lds)
 
-#pars = pickle.load(open('data/%s/%s/%s_risk-thresholds_tocs-reset=%s_fixed=%s-%s_Krat=%s_Rmaxrat=%s_RRrat=%s_seed-%s.pkl'%(loc,site,syn_samp,tocs_reset,fixed_pool,fixed_pool_value,round(K_ratios[p],2),round(Rmax_ratios[p],2),round(rr_ratios[p],2),seed),'rb'),encoding='latin1')
-#risk_curve = syn_util.create_risk_curve(pars['x'])
-"""
-Q,Qf,dowy,tocs_inp,df_idx = model.extract(sd,ed,forecast_type=sim_forecast,syn_sample=syn_samp,Rsyn_path=syn_path2,syn_vers=syn_vers2,forecast_param='a',loc=loc,site=site,opt_pcnt=syn_vers2_pct,gen_setup=syn_vers2_setup,K=K)
-tocs = model.get_tocs(dowy,K_scale)
-Qf = Qf[:,:,:max_lds] # just use 14 lead days
-ne = np.shape(Qf)[1]
-nl = max_lds
-"""
-
-"""
-#demand calculations assuming baseline policy storage with no demand based releases
-dmd_par = pickle.load(open('./data/demand-data.pkl','rb'),encoding='latin1')
-
-dmd_t = model.simulate_baseline_demand(Q=Q_hefs, Q_MSG=Q_MSG_hefs, Qf=Qf_hefs, Qf_MSG=Qf_MSG_hefs, dowy=dowy_hefs, tocs=tocs_inp, dmd_params=dmd_par)[6]
-#o/w, do not include demand in optimization
-no_dmd_t = np.zeros_like(Q_hefs)
-"""
 #load synthetic forecast simulation data
-data1 = np.load('out/%s/%s/sim-array_synforc-%s_Krat=%s_Rmaxrat=%s_RRrat=%s_seed-%s.npz' %(loc,site,syn_vers1+svers,round(K_ratios[p],2),round(Rmax_ratios[p],2),round(rr_ratios[p],2),seed))
+data1 = np.load('data/%s/%s/sim-array_synforc-%s_Krat=%s_Rmaxrat=%s_RRrat=%s_seed-%s.npz' %(loc,site,syn_vers1+svers,round(K_ratios[p],2),round(Rmax_ratios[p],2),round(rr_ratios[p],2),seed))
 sim_data1 = data1['arr']
 
-data2 = np.load('out/%s/%s/sim-array_synforc-%s_Krat=%s_Rmaxrat=%s_RRrat=%s_seed-%s.npz' %(loc,site,syn_vers2+svers,round(K_ratios[p],2),round(Rmax_ratios[p],2),round(rr_ratios[p],2),seed))
+data2 = np.load('data/%s/%s/sim-array_synforc-%s_Krat=%s_Rmaxrat=%s_RRrat=%s_seed-%s.npz' %(loc,site,syn_vers2+svers,round(K_ratios[p],2),round(Rmax_ratios[p],2),round(rr_ratios[p],2),seed))
 sim_data2 = data2['arr']
 
-"""
-#load synthetic forecast simulation data
-mod_versd = mod_vers + 'd'
-syn_vers = 'v1' + svers1
-data1 = np.load('data/comb_sim-array_synforc-%s_modvers-%s.npz' %(syn_vers,mod_versd))
-sim_data1d = data1['arr']
-
-syn_vers = 'v2' + svers2
-data2 = np.load('data/comb_sim-array_synforc-%s_modvers-%s.npz' %(syn_vers,mod_versd))
-sim_data2d = data2['arr']
-"""
-"""
-#sim_data components across dim 3 for reference
-comb_array[i,:,0]=S
-comb_array[i,:,1]=R
-comb_array[i,:,2]=tocs
-comb_array[i,:,3]=firo
-comb_array[i,:,4]=spill
-comb_array[i,:,5]=Q_cp
-comb_array[i,:,6]=rel_ld
-"""
-
 #extract and simulate for HEFS-firo and baseline
-Q,Qf_hefs,dowy,tocs,df_idx = model.extract(sd,ed,forecast_type=opt_forecast,syn_sample=syn_samp,Rsyn_path=syn_path2,syn_vers=syn_vers2,forecast_param='a',loc=loc,site=site,opt_pcnt=syn_vers2_pct,gen_setup=syn_vers2_setup,K=K_scale)
+Q,Qf_hefs,dowy,tocs,df_idx = model.extract(sd,ed,forecast_type=opt_forecast,syn_sample=syn_samp,Rsyn_path=syn_path2,syn_vers=syn_vers2,forecast_param='a',loc=loc,site=site,opt_pcnt='',obj_pwr='',opt_strat='',gen_setup=syn_vers2_setup,K=K_scale)
 Qf_hefs = Qf_hefs[:,:,:max_lds]
 ne = np.shape(Qf_hefs)[1]
 Qf_summed = np.cumsum(Qf_hefs, axis=2)
@@ -251,18 +210,18 @@ dt_format=mdates.DateFormatter('%m/%y')
 a00.xaxis.set_major_formatter(dt_format)
 
 #1b. plot baseline ops vs hefs 
-l1, = a00.plot(df_idx[dt_idx], tocs[dt_idx]/1000, c=cb_gry,alpha=0.5,linewidth=1)
-l2, = a00.plot(df_idx[dt_idx], firo_base[dt_idx]/1000, c = cb_brwn,alpha=0.5,linewidth=1)
+l1, = a00.plot(df_idx[dt_idx], tocs[dt_idx]* taf_to_km3, c=cb_gry,alpha=0.5,linewidth=1)
+l2, = a00.plot(df_idx[dt_idx], firo_base[dt_idx]* taf_to_km3, c = cb_brwn,alpha=0.5,linewidth=1)
 #leg1 = a00.legend([l1,l2],['TOCS','K'],loc='upper left',fontsize='large')
 #a00.add_artist(leg1)
-l3, = a00.plot(df_idx[dt_idx], S_base[dt_idx]/1000, c='black',alpha=0.6,linewidth=1.5)
-l4, = a00.plot(df_idx[dt_idx], S_hefs[dt_idx]/1000, c=chefs,linewidth=1.5)
+l3, = a00.plot(df_idx[dt_idx], S_base[dt_idx]* taf_to_km3, c='black',alpha=0.6,linewidth=1.5)
+l4, = a00.plot(df_idx[dt_idx], S_hefs[dt_idx]* taf_to_km3, c=chefs,linewidth=1.5)
 a00.legend([l3,l4,l1],['$S_{base}$','$S_{HEFS}$','TOCS'],loc='upper left',fontsize='large')
-a00.set_ylabel('Storage (MAF)',fontsize='large')
+a00.set_ylabel('Storage ($km^3$)',fontsize='large')
 a00.set_xlabel('Date',fontsize='large')
 a00.set_xlim([xlims[0],xlims[1]])
 #a00.set_title('Storage timeseries',fontsize='x-large',fontweight='bold')
-a00.set_ylim([0.5*K_scale/1000, K_scale*1.25/1000])
+a00.set_ylim([0.5*K_scale * taf_to_km3, K_scale*1.25 * taf_to_km3])
 #a00.text(df_idx[evt_idx],K_scale*1.1,r'$\overline{S}:$'+str(round(np.mean(S_base[dt_idx]),1)) +' TAF',fontsize='small')
 #a00.text(df_idx[evt_idx],K_scale*1.05,r'$\overline{S}:$'+str(round(np.mean(S_hefs[dt_idx]),1)) +' TAF',color=chefs,fontsize='small')
 #a00.text(df_idx[evt_idx+365],K_scale*1.1,r'$spills:$'+str(np.count_nonzero(spill_base)),fontsize='small')
@@ -273,13 +232,13 @@ a00.set_ylim([0.5*K_scale/1000, K_scale*1.25/1000])
 #a00.text(df_idx[evt_idx+365+365+180],K_scale*1.05,r'$R_{99}:$'+str(round(R99_hefs,1)),color=chefs,fontsize='small')
 #a00.text(df_idx[evt_idx+365+365+365+90],K_scale*1.1,r'$R_{max}:$'+str(round(np.max(R_base),1)),fontsize='small')
 #a00.text(df_idx[evt_idx+365+365+365+90],K_scale*1.05,r'$R_{max}:$'+str(round(np.max(R_hefs),1)),color=chefs,fontsize='small')
-a00.text(df_idx[evt_idx+365+90],K_scale*1.2/1000,r'$K:$'+str(round(K_scale/1000,3))+' MAF',fontweight='bold',fontsize='large')
-a00.text(df_idx[evt_idx+365+90],K_scale*1.15/1000,r'$R_{max}:$'+str(round(Rmax_scale,1)) + ' TAF/d',fontweight='bold',fontsize='large')
-a00.text(df_idx[evt_idx+365+90],K_scale*1.08/1000,r'$\overline{S}:$'+str(round(np.mean(S_base[dt_idx])/1000,3)) +' MAF',fontsize='large')
-a00.text(df_idx[evt_idx+365+90],K_scale*1.03/1000,r'$\overline{S}:$'+str(round(np.mean(S_hefs[dt_idx])/1000,3)) +' MAF',color=chefs,fontsize='large')
-a00.text(df_idx[evt_idx+365+365+180],K_scale*1.08/1000,r'$R_{99}:$'+str(round(R99_base,1))+' TAF/d',fontsize='large')
-a00.text(df_idx[evt_idx+365+365+180],K_scale*1.03/1000,r'$R_{99}:$'+str(round(R99_hefs,1))+' TAF/d',color=chefs,fontsize='large')
-a00.text(df_idx[dt_idx][30],.55*K_scale/1000,'b)',fontsize='xx-large',fontweight='bold')
+a00.text(df_idx[evt_idx+365+90],K_scale*1.2* taf_to_km3,r'$K:$'+str(round(K_scale* taf_to_km3,3))+' $km^3$',fontweight='bold',fontsize='large')
+a00.text(df_idx[evt_idx+365+90],K_scale*1.15* taf_to_km3,r'$R_{max}:$'+str(round(Rmax_scale/ kcfs_to_tafd * kcfs_to_m3s,1)) + ' $m^3/s$',fontweight='bold',fontsize='large')
+a00.text(df_idx[evt_idx+365+90],K_scale*1.08* taf_to_km3,r'$\overline{S}:$'+str(round(np.mean(S_base[dt_idx])* taf_to_km3,3)) +' $km^3$',fontsize='large')
+a00.text(df_idx[evt_idx+365+90],K_scale*1.03* taf_to_km3,r'$\overline{S}:$'+str(round(np.mean(S_hefs[dt_idx])* taf_to_km3,3)) +' $km^3$',color=chefs,fontsize='large')
+a00.text(df_idx[evt_idx+365+365+180],K_scale*1.08* taf_to_km3,r'$R_{99}:$'+str(round(R99_base/ kcfs_to_tafd * kcfs_to_m3s,1))+' $m^3/s$',fontsize='large')
+a00.text(df_idx[evt_idx+365+365+180],K_scale*1.03* taf_to_km3,r'$R_{99}:$'+str(round(R99_hefs/ kcfs_to_tafd * kcfs_to_m3s,1))+' $m^3/s$',color=chefs,fontsize='large')
+a00.text(df_idx[dt_idx][30],.55*K_scale* taf_to_km3,'b)',fontsize='xx-large',fontweight='bold')
 if np.count_nonzero(spill_hefs_idx) > 0:
     for i in range(len(spill_hefs_idx)):
         a00.axvline(df_idx[dt_idx][spill_hefs_idx][i],color='red',linewidth=2,alpha=0.3)
@@ -309,22 +268,22 @@ a1 = f.add_subplot(gs2[0])
 ymn = 0.95*min(np.min(sim_data1[:,dt_idx,0]),np.min(sim_data2[:,dt_idx,0]))
 ymx = 1.2* (K_scale-ymn)+ymn
 
-l1, = a1.plot(df_idx[dt_idx], firo_base[dt_idx]/1000, c = cb_brwn, linewidth=1,alpha=0.5)
+l1, = a1.plot(df_idx[dt_idx], firo_base[dt_idx]*taf_to_km3, c = cb_brwn, linewidth=1,alpha=0.5)
 #l2, = a1.plot(df_idx[dt_idx], tocs_base[dt_idx], c = cb_gry, linewidth=1,alpha=0.5)
 leg1 = a1.legend([l1],['K'],loc='upper left',fontsize='large',frameon=False)
 a1.add_artist(leg1)
 for i in range(nsamps):
-    a1.plot(df_idx[dt_idx], sim_data1[i,dt_idx,0]/1000, c=cv1,alpha=0.1)
+    a1.plot(df_idx[dt_idx], sim_data1[i,dt_idx,0]*taf_to_km3, c=cv1,alpha=0.1)
 #l3, = a1.plot(df_idx[dt_idx], S_base[dt_idx], c='black',linewidth=2)
-l4, = a1.plot(df_idx[dt_idx], S_hefs[dt_idx]/1000, c=chefs,linewidth=2)
-l5, = a1.plot(df_idx[dt_idx], sim_data1[0,dt_idx,0]/1000, c=cv1,alpha=0.5)
+l4, = a1.plot(df_idx[dt_idx], S_hefs[dt_idx]*taf_to_km3, c=chefs,linewidth=2)
+l5, = a1.plot(0, 0, c=cv1,alpha=0.5)
 a1.legend([l4,l5],['$S_{HEFS}$','$S_{synM1}$'],bbox_transform=a1.transAxes,loc=(.5,.01),fontsize='large',frameon=False)
 a1.axvline(df_idx[evt_idx],linewidth=0.5,color='black',linestyle='--')
-a1.text(df_idx[evt_idx],(1.05*(K_scale-ymn)+ymn)/1000,evt,fontsize='large')
-a1.set_ylabel('Storage (MAF)',fontsize='large')
-a1.text(df_idx[evt_idx-pad+1],(.25*(ymx-ymn)+ymn)/1000,'Spill: %s/%s' %(v1_spills,len(v1_spill)),fontsize='large',fontweight='bold')
-a1.text(df_idx[evt_idx-pad+1],(.05*(ymx-ymn)+ymn)/1000,'c)',fontsize='xx-large',fontweight='bold')
-a1.set_ylim([ymn/1000, ymx/1000])
+a1.text(df_idx[evt_idx],(1.05*(K_scale-ymn)+ymn)*taf_to_km3,evt,fontsize='large')
+a1.set_ylabel('Storage ($km^3$)',fontsize='large')
+a1.text(df_idx[evt_idx-pad+1],(.25*(ymx-ymn)+ymn)*taf_to_km3,'Spill: %s/%s' %(v1_spills,len(v1_spill)),fontsize='large',fontweight='bold')
+a1.text(df_idx[evt_idx-pad+1],(.05*(ymx-ymn)+ymn)*taf_to_km3,'c)',fontsize='xx-large',fontweight='bold')
+a1.set_ylim([ymn*taf_to_km3, ymx*taf_to_km3])
 a1.set_xlim([st, ed])
 a1.xaxis.set_major_formatter(dt_format)
 #plt.gcf().autofmt_xdate()
@@ -336,22 +295,22 @@ v2_spills = np.count_nonzero(v2_spill)
 
 a2 = f.add_subplot(gs2[1])
 
-l1, = a2.plot(df_idx[dt_idx], firo_base[dt_idx]/1000, c = cb_brwn, linewidth=1,alpha=0.5)
+l1, = a2.plot(df_idx[dt_idx], firo_base[dt_idx]*taf_to_km3, c = cb_brwn, linewidth=1,alpha=0.5)
 #l2, = a2.plot(df_idx[dt_idx], tocs_base[dt_idx], c = cb_gry, linewidth=1,alpha=0.5)
 leg1 = a2.legend([l1],['K'],loc='upper left',fontsize='large',frameon=False)
 a2.add_artist(leg1)
 for i in range(nsamps):
-    a2.plot(df_idx[dt_idx], sim_data2[i,dt_idx,0]/1000, c=cv2,alpha=0.1)
+    a2.plot(df_idx[dt_idx], sim_data2[i,dt_idx,0]*taf_to_km3, c=cv2,alpha=0.1)
 #l3, = a2.plot(df_idx[dt_idx], S_base[dt_idx], c='black',linewidth=2)
-l4, = a2.plot(df_idx[dt_idx], S_hefs[dt_idx]/1000, c=chefs,linewidth=2)
-l5, = a2.plot(df_idx[dt_idx], sim_data2[0,dt_idx,0]/1000, c=cv2,alpha=0.5)
+l4, = a2.plot(df_idx[dt_idx], S_hefs[dt_idx]*taf_to_km3, c=chefs,linewidth=2)
+l5, = a2.plot(0, 0, c=cv2,alpha=0.5)
 a2.legend([l4,l5],['$S_{HEFS}$','$S_{synM2}$'],bbox_transform=a2.transAxes,loc=(.55,.01),fontsize='large',frameon=False)
 a2.axvline(df_idx[evt_idx],linewidth=0.5,color='black',linestyle='--')
-a2.text(df_idx[evt_idx],(1.05*(K_scale-ymn)+ymn)/1000,evt,fontsize='large')
-a2.text(df_idx[evt_idx-pad+1],(.25*(ymx-ymn)+ymn)/1000,'Spill: %s/%s' %(v2_spills,len(v2_spill)),fontsize='large',fontweight='bold')
-a2.text(df_idx[evt_idx-pad+1],(.05*(ymx-ymn)+ymn)/1000,'d)',fontsize='xx-large',fontweight='bold')
+a2.text(df_idx[evt_idx],(1.05*(K_scale-ymn)+ymn)*taf_to_km3,evt,fontsize='large')
+a2.text(df_idx[evt_idx-pad+1],(.25*(ymx-ymn)+ymn)*taf_to_km3,'Spill: %s/%s' %(v2_spills,len(v2_spill)),fontsize='large',fontweight='bold')
+a2.text(df_idx[evt_idx-pad+1],(.05*(ymx-ymn)+ymn)*taf_to_km3,'d)',fontsize='xx-large',fontweight='bold')
 #a2.set_ylabel('TAF')
-a2.set_ylim([ymn/1000, ymx/1000])
+a2.set_ylim([ymn*taf_to_km3, ymx*taf_to_km3])
 a2.set_xlim([st, ed])
 a2.xaxis.set_major_formatter(dt_format)
 #plt.gcf().autofmt_xdate()
@@ -362,22 +321,22 @@ a2.tick_params(axis='both',which='major',labelsize='large')
 a3 = f.add_subplot(gs2[2])
 
 for i in range(nsamps):
-    a3.plot(df_idx[dt_idx], sim_data1[i,dt_idx,5] / kcfs_to_tafd, c=cv1,alpha=0.1)
-l3, = a3.plot(df_idx[dt_idx], sim_data1[0,dt_idx,5] / kcfs_to_tafd, c=cv1,alpha=0.5)
+    a3.plot(df_idx[dt_idx], sim_data1[i,dt_idx,5] / kcfs_to_tafd * kcfs_to_m3s, c=cv1,alpha=0.1)
+l3, = a3.plot(0, 0, c=cv1,alpha=0.5)
 #l1, = a3.plot(df_idx[dt_idx], Q_cp_base[dt_idx] / kcfs_to_tafd,c='black',linewidth=2)
-l1, = a3.plot(df_idx[dt_idx], Q[dt_idx] / kcfs_to_tafd,c='black',linewidth=2,alpha=0.5)
-l2, = a3.plot(df_idx[dt_idx], R_hefs[dt_idx] / kcfs_to_tafd,c=chefs,linewidth=2)
+l1, = a3.plot(df_idx[dt_idx], Q[dt_idx] / kcfs_to_tafd* kcfs_to_m3s,c='black',linewidth=2,alpha=0.5)
+l2, = a3.plot(df_idx[dt_idx], R_hefs[dt_idx] / kcfs_to_tafd* kcfs_to_m3s,c=chefs,linewidth=2)
 #a3.legend([l1,l2,l3],['$Q$','$R_{HEFS}$','$R_{synM1}$'],bbox_transform=a3.transAxes,loc=(.65,.45),fontsize='medium',frameon=False)
 #a3.legend([l2,l3,l1],['$R_{HEFS}$','$R_{synM1}$','$Q$'],bbox_transform=a3.transAxes,loc=(0,.43),fontsize='large',frameon=False)
 a3.legend([l2,l3,l1],['$R_{HEFS}$','$R_{synM1}$','$Q$'],bbox_transform=a3.transAxes,loc=(0.57,.43),fontsize='large',frameon=False)
-a3.axhline(Rmax_scale / kcfs_to_tafd, color='red')
+a3.axhline(Rmax_scale / kcfs_to_tafd* kcfs_to_m3s, color='red')
 #a3.axhline(R_thresh, color=chefs,linewidth=0.5,alpha=0.5)
 a3.axvline(df_idx[evt_idx],linewidth=0.5,color='black',linestyle='--')
 #a3.text(df_idx[evt_idx],1.15 * Rmax_scale / kcfs_to_tafd,evt,fontsize='small')
-a3.text(df_idx[evt_idx+int(pad/2)],1.025*Rmax_scale / kcfs_to_tafd,'$R_{max}$',color='red',fontsize='large')
-a3.set_ylabel('Streamflow (kcfs)',fontsize='large')
-a3.text(df_idx[evt_idx-pad+1],1.1 * Rmax_scale / kcfs_to_tafd,'e)',fontsize='xx-large',fontweight='bold')
-a3.set_ylim([0, 1.25 * Rmax_scale / kcfs_to_tafd])
+a3.text(df_idx[evt_idx+int(pad/2)],1.025*Rmax_scale / kcfs_to_tafd* kcfs_to_m3s,'$R_{max}$',color='red',fontsize='large')
+a3.set_ylabel('Streamflow ($m^3/s$)',fontsize='large')
+a3.text(df_idx[evt_idx-pad+1],1.1 * Rmax_scale / kcfs_to_tafd* kcfs_to_m3s,'e)',fontsize='xx-large',fontweight='bold')
+a3.set_ylim([0, 1.25 * Rmax_scale / kcfs_to_tafd* kcfs_to_m3s])
 a3.set_xlim([st, ed])
 a3.xaxis.set_major_formatter(dt_format)
 #plt.gcf().autofmt_xdate()
@@ -387,22 +346,22 @@ a3.tick_params(axis='both',which='major',labelsize='large')
 a4 = f.add_subplot(gs2[3])
 
 for i in range(nsamps):
-    a4.plot(df_idx[dt_idx], sim_data2[i,dt_idx,5] / kcfs_to_tafd, c=cv2,alpha=0.1)
-l3, = a4.plot(df_idx[dt_idx], sim_data2[0,dt_idx,5] / kcfs_to_tafd, c=cv2,alpha=0.5)
+    a4.plot(df_idx[dt_idx], sim_data2[i,dt_idx,5] / kcfs_to_tafd* kcfs_to_m3s, c=cv2,alpha=0.1)
+l3, = a4.plot(0, 0, c=cv2,alpha=0.5)
 #l1, = a4.plot(df_idx[dt_idx], Q_cp_base[dt_idx] / kcfs_to_tafd,c='black',linewidth=2)
-l1, = a4.plot(df_idx[dt_idx], Q[dt_idx] / kcfs_to_tafd,c='black',linewidth=2,alpha=0.5)
-l2, = a4.plot(df_idx[dt_idx], R_hefs[dt_idx] / kcfs_to_tafd,c=chefs,linewidth=2)
+l1, = a4.plot(df_idx[dt_idx], Q[dt_idx] / kcfs_to_tafd* kcfs_to_m3s,c='black',linewidth=2,alpha=0.5)
+l2, = a4.plot(df_idx[dt_idx], R_hefs[dt_idx] / kcfs_to_tafd* kcfs_to_m3s,c=chefs,linewidth=2)
 #a4.legend([l2,l3,l1],['$R_{HEFS}$','$R_{synM2}$','$Q$'],bbox_transform=a4.transAxes,loc=(0,.43),fontsize='large',frameon=False)
 a4.legend([l2,l3,l1],['$R_{HEFS}$','$R_{synM2}$','$Q$'],bbox_transform=a4.transAxes,loc=(0.57,.43),fontsize='large',frameon=False)
 #a4.legend([l2,l3],['$R_{HEFS}$','$R_{synM2}$'],bbox_transform=a4.transAxes,loc=(.05,.45),fontsize='large',frameon=False)
-a4.axhline(Rmax_scale / kcfs_to_tafd, color='red')
+a4.axhline(Rmax_scale / kcfs_to_tafd* kcfs_to_m3s, color='red')
 #a4.axhline(R_thresh, color=chefs,linewidth=0.5,alpha=0.5)
-a4.text(df_idx[evt_idx+int(pad/2)],1.025*Rmax_scale / kcfs_to_tafd,'$R_{max}$',color='red',fontsize='large')
+a4.text(df_idx[evt_idx+int(pad/2)],1.025*Rmax_scale / kcfs_to_tafd* kcfs_to_m3s,'$R_{max}$',color='red',fontsize='large')
 a4.axvline(df_idx[evt_idx],linewidth=0.5,color='black',linestyle='--')
 #a4.text(df_idx[evt_idx],1.15 * Rmax_scale / kcfs_to_tafd,evt,fontsize='small')
-a4.text(df_idx[evt_idx-pad+1],1.1 * Rmax_scale / kcfs_to_tafd,'f)',fontsize='xx-large',fontweight='bold')
+a4.text(df_idx[evt_idx-pad+1],1.1 * Rmax_scale / kcfs_to_tafd* kcfs_to_m3s,'f)',fontsize='xx-large',fontweight='bold')
 #a4.set_ylabel('kcfs')
-a4.set_ylim([0, 1.25 * Rmax_scale / kcfs_to_tafd])
+a4.set_ylim([0, 1.25 * Rmax_scale / kcfs_to_tafd* kcfs_to_m3s])
 a4.set_xlim([st, ed])
 a4.xaxis.set_major_formatter(dt_format)
 #plt.gcf().autofmt_xdate()
@@ -471,7 +430,7 @@ plt.setp(plt.xticks()[1],rotation=45,ha='right')
 a6.yaxis.set_ticklabels([])
 a6.tick_params(axis='both',which='major',labelsize='large')
 
-f.savefig('./figures/%s/%s/4x2_risk-curve-ts-S-Qcp-Rlead_svers-%s_Krat=%s_Rmaxrat=%s_RRrat=%s_seed-%s_evt=%s.png' %(loc,site,svers,round(K_ratios[p],2),round(Rmax_ratios[p],2),round(rr_ratios[p],2),seed,evt_no),dpi=300,bbox_inches='tight')
+f.savefig('./figs/%s/%s/4x2_risk-curve-ts-S-Qcp-Rlead_svers-%s_Krat=%s_Rmaxrat=%s_RRrat=%s_seed-%s_evt=%s.png' %(loc,site,svers,round(K_ratios[p],2),round(Rmax_ratios[p],2),round(rr_ratios[p],2),seed,evt_no),dpi=300,bbox_inches='tight')
 
 #sys.modules[__name__].__dict__.clear()
 
